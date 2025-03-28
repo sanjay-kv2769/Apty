@@ -17,10 +17,12 @@ async function bootstrap() {
       transport: Transport.TCP,
       options: {
         host: userConfig.host,
-        port: userConfig.post,
+        port: userConfig.port,
       },
     }
   );
+
+  console.log(`User service running on ${userConfig.host}:${userConfig.port}`);
 
   await app.listen();
 }
