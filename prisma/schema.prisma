@@ -1,0 +1,115 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+/// 🔹 **Users Table**
+model User {
+  id                 String   @id @default(uuid())
+  email              String?  @unique
+  phoneNumber        String?  @unique
+  phoneNumberVerified Boolean @default(false)
+  firebaseUid        String?  @unique
+  role               Role
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  profile            UserProfile?
+  parent             Parent?
+  student           Student?
+  teacher           Teacher?
+}
+
+/// 🔹 **User Profile**
+model UserProfile {
+  userId             String   @id @default(uuid()) @map("user_id")
+  firstName         String
+  lastName          String?
+  displayName       String?
+  dateOfBirth       DateTime?
+  gender           String?
+  profilePictureUrl String?
+  preferredLanguage String   @default("en")
+  timezone         String   @default("UTC")
+  updatedAt        DateTime @updatedAt
+
+  user             User      @relation(fields: [userId], references: [id])
+}
+
+/// 🔹 **Parent Table**
+model Parent {
+  userId        String   @id @map("user_id")
+  pinHash       String?
+  walletBalance Decimal  @default(0.00)
+  referralCode  String?  @unique
+  createdAt     DateTime @default(now())
+
+  user          User     @relation(fields: [userId], references: [id])
+  students      Student[]
+}
+
+/// 🔹 **Student Table**
+model Student {
+  userId          String   @id @map("user_id")
+  parentId        String?  @unique
+  schoolId        String?  
+  grade           String?
+  motherTongue    String?
+  learningDisabilities String[]
+  currentLevelId  String?  
+
+  createdAt       DateTime @default(now())
+
+  user           User     @relation(fields: [userId], references: [id])
+  parent         Parent?  @relation(fields: [parentId], references: [userId])
+  school         School?  @relation(fields: [schoolId], references: [id])
+}
+
+/// 🔹 **Teacher Table**
+model Teacher {
+  userId            String   @id @map("user_id")
+  schoolId          String?
+  subjectSpecialization String?
+  qualification     String?
+  createdAt         DateTime @default(now())
+
+  user             User     @relation(fields: [userId], references: [id])
+  school           School?  @relation(fields: [schoolId], references: [id])
+}
+
+/// 🔹 **School Table**
+model School {
+  id                   String   @id @default(uuid())
+  name                 String
+  address              String?
+  contactPersonName    String?
+  contactPersonDesignation String?
+  contactPhone         String?
+  contactEmail         String?
+  licenseCount         Int      @default(0)
+  licenseExpiry        DateTime?
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  students             Student[]
+  teachers             Teacher[]
+}
+
+/// 🔹 **Role Enum**
+enum Role {
+  STUDENT
+  PARENT
+  TEACHER
+  SCHOOL_ADMIN
+  SUPER_ADMIN
+}
