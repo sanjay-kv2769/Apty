@@ -13,103 +13,150 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-/// 🔹 **Users Table**
-model User {
-  id                 String   @id @default(uuid())
-  email              String?  @unique
-  phoneNumber        String?  @unique
-  phoneNumberVerified Boolean @default(false)
-  firebaseUid        String?  @unique
-  role               Role
-  createdAt          DateTime @default(now())
+model Parent {
+  id              String    @id @default(uuid())
+  email           String?   @unique
+  phoneNumber     String?   @unique
+  phoneVerified   Boolean   @default(false)
+  firebaseUid     String?   @unique
+  passwordHash    String?
+  pinHash         String?
+  accountStatus   String    @default("active") @db.VarChar(20)
+  lastLogin       DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  profile         ParentProfile?
+  children        Child[]
+  relationships   ParentChildRelationship[]
+  authMethods     ParentAuthMethod[]
+}
+
+model ParentProfile {
+  parentId           String  @id @unique @map("parent_id")
+  firstName          String  @db.VarChar(100)
+  lastName           String?
+  preferredLanguage  String  @default("en")
+  profilePictureUrl  String?
+  timezone          String  @default("UTC")
   updatedAt          DateTime @updatedAt
 
-  profile            UserProfile?
-  parent             Parent?
-  student           Student?
-  teacher           Teacher?
+  parent            Parent  @relation(fields: [parentId], references: [id], onDelete: Cascade)
 }
 
-/// 🔹 **User Profile**
-model UserProfile {
-  userId             String   @id @default(uuid()) @map("user_id")
-  firstName         String
-  lastName          String?
-  displayName       String?
-  dateOfBirth       DateTime?
-  gender           String?
-  profilePictureUrl String?
-  preferredLanguage String   @default("en")
-  timezone         String   @default("UTC")
-  updatedAt        DateTime @updatedAt
+model Child {
+  id                 String   @id @default(uuid())
+  parentId           String?  @map("parent_id")
+  schoolId           String?  @map("school_id")
+  fullName           String
+  displayName        String?
+  dateOfBirth        DateTime?
+  gender            String?
+  profilePictureUrl  String?
+  grade             String?
+  motherTongue      String?
+  learningPreferences Json?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
 
-  user             User      @relation(fields: [userId], references: [id])
+  parent            Parent?   @relation(fields: [parentId], references: [id], onDelete: Cascade)
+  school           School?   @relation(fields: [schoolId], references: [id])
+  relationships    ParentChildRelationship[]
+  credentials      ChildCredential?
+  schoolAccount   SchoolChildAccount?
 }
 
-/// 🔹 **Parent Table**
-model Parent {
-  userId        String   @id @map("user_id")
-  pinHash       String?
-  walletBalance Decimal  @default(0.00)
-  referralCode  String?  @unique
+model ChildCredential {
+  childId       String  @id @map("child_id")
+  username      String  @unique
+  passwordHash  String
+  createdBy     String?
   createdAt     DateTime @default(now())
+  lastUpdated   DateTime @updatedAt
 
-  user          User     @relation(fields: [userId], references: [id])
-  students      Student[]
+  child        Child  @relation(fields: [childId], references: [id], onDelete: Cascade)
 }
 
-/// 🔹 **Student Table**
-model Student {
-  userId          String   @id @map("user_id")
-  parentId        String?  @unique
-  schoolId        String?  
-  grade           String?
-  motherTongue    String?
-  learningDisabilities String[]
-  currentLevelId  String?  
+model ParentChildRelationship {
+  parentId       String  @map("parent_id")
+  childId        String  @map("child_id")
+  relationshipType String  @default("parent") @db.VarChar(50)
+  isPrimary      Boolean @default(false)
+  canManage      Boolean @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
+  parent        Parent  @relation(fields: [parentId], references: [id], onDelete: Cascade)
+  child         Child   @relation(fields: [childId], references: [id], onDelete: Cascade)
+
+  @@id([parentId, childId])
+}
+
+model ParentAuthMethod {
+  id          String  @id @default(uuid())
+  parentId    String
+  methodType  String  @db.VarChar(50)
+  providerId  String?
+  isVerified  Boolean @default(false)
+  isPrimary   Boolean @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  parent      Parent  @relation(fields: [parentId], references: [id], onDelete: Cascade)
+  @@unique([parentId, methodType, providerId])
+}
+
+model AuthSession {
+  id               String  @id @default(uuid())
+  userId           String
+  userType         String  @db.VarChar(10)
+  deviceId         String?
+  deviceName       String?
+  ipAddress        String?
+  userAgent        String?
+  accessTokenHash  String
+  refreshTokenHash String
+  expiresAt        DateTime
+  revoked          Boolean @default(false)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
+
+model OtpVerification {
+  id             String  @id @default(uuid())
+  phoneNumber    String
+  email          String?
+  otpCode        String  @db.VarChar(10)
+  purpose        String  @db.VarChar(50)
+  userType       String? @db.VarChar(10)
+  intendedUserId String?
+  expiresAt      DateTime
+  verified       Boolean @default(false)
+  createdAt      DateTime @default(now())
+}
+
+model SchoolChildAccount {
+  childId         String  @id @map("child_id")
+  schoolId        String
+  groupId         String?
+  username        String  @unique
+  initialPassword String
+  passwordChanged Boolean @default(false)
+  accountStatus   String  @default("active") @db.VarChar(20)
+  createdBy       String?
   createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
-  user           User     @relation(fields: [userId], references: [id])
-  parent         Parent?  @relation(fields: [parentId], references: [userId])
-  school         School?  @relation(fields: [schoolId], references: [id])
+  child          Child   @relation(fields: [childId], references: [id], onDelete: Cascade)
+  school        School  @relation(fields: [schoolId], references: [id])
 }
 
-/// 🔹 **Teacher Table**
-model Teacher {
-  userId            String   @id @map("user_id")
-  schoolId          String?
-  subjectSpecialization String?
-  qualification     String?
-  createdAt         DateTime @default(now())
-
-  user             User     @relation(fields: [userId], references: [id])
-  school           School?  @relation(fields: [schoolId], references: [id])
-}
-
-/// 🔹 **School Table**
 model School {
-  id                   String   @id @default(uuid())
-  name                 String
-  address              String?
-  contactPersonName    String?
-  contactPersonDesignation String?
-  contactPhone         String?
-  contactEmail         String?
-  licenseCount         Int      @default(0)
-  licenseExpiry        DateTime?
-  createdAt            DateTime @default(now())
-  updatedAt            DateTime @updatedAt
+  id        String  @id @default(uuid())
+  name      String
+  address   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  students             Student[]
-  teachers             Teacher[]
-}
-
-/// 🔹 **Role Enum**
-enum Role {
-  STUDENT
-  PARENT
-  TEACHER
-  SCHOOL_ADMIN
-  SUPER_ADMIN
+  children  Child[]
+  accounts  SchoolChildAccount[]
 }
