@@ -26,4 +26,9 @@ export default registerAs('app', () => ({
         password: process.env.DB_PASSWORD || 'password',
         database: process.env.DB_DATABASE || 'dbname',
     },
+    firebase:{
+        projectId: process.env.FIREBASE_PROJECT_ID,
+        privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+        clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+    }
 }));

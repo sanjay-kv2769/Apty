@@ -123,7 +123,7 @@ model AuthSession {
 
 model OtpVerification {
   id             String  @id @default(uuid())
-  phoneNumber    String
+  phoneNumber    String @unique
   email          String?
   otpCode        String  @db.VarChar(10)
   purpose        String  @db.VarChar(50)
