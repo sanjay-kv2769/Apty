@@ -2,7 +2,7 @@ import { Injectable,UnauthorizedException } from '@nestjs/common';
 import { DatabaseService as PrismaService } from 'libs/database/database.service';
 import { FirebaseService } from './firebase/firebase.service';
 
-
+@Injectable()
 export class AuthenticationService {
   constructor(
     private readonly prisma: PrismaService,
@@ -51,9 +51,3 @@ export class AuthenticationService {
 
 
 
-// @Injectable()
-// export class AuthenticationService {
-//   getHello(): string {
-//     return 'Hello World!';
-//   }
-// }
