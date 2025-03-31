@@ -1,7 +1,5 @@
 import { Body, Controller, Get, Post } from '@nestjs/common';
 import { MessagePattern, Payload } from '@nestjs/microservices';
-import { DatabaseService as PrismaService } from 'libs/database/database.service';
-import { FirebaseService } from './firebase/firebase.service';
 import { OtpService } from './Otp/otp.service';
 import { AuthenticationService } from './authentication.service';
 
@@ -9,9 +7,7 @@ import { AuthenticationService } from './authentication.service';
 @Controller()
 export class AuthenticationController {
   constructor(private readonly otpService: OtpService,
-    private readonly firebaseService: FirebaseService,
-    private readonly prisma: PrismaService) { }
-  private authenticationService: AuthenticationService
+    private authenticationService: AuthenticationService) { }
 
 
   @MessagePattern({ cmd: 'send-otp' })
