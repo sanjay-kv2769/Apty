@@ -5,6 +5,7 @@ import { ConfigModule } from '@nestjs/config';
 import configuration from 'libs/config/configuration';
 import { DatabaseService as PrismaService } from 'libs/database/database.service';
 import { FirebaseService } from './firebase/firebase.service';
+import { OtpService } from './Otp/otp.service';
 
 
 @Module({
@@ -13,6 +14,6 @@ import { FirebaseService } from './firebase/firebase.service';
     load: [configuration],
   }),],
   controllers: [AuthenticationController],
-  providers: [AuthenticationService, PrismaService, FirebaseService],
+  providers: [AuthenticationService, PrismaService, FirebaseService, OtpService],
 })
 export class AuthenticationModule { }

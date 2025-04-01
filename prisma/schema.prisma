@@ -13,6 +13,27 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model Child {
+  id                 String   @id @default(uuid())
+  parentId           String?  @map("parent_id")
+  schoolId           String?  @map("school_id")
+  fullName           String
+  displayName        String?
+  dateOfBirth        DateTime?
+  gender            String?
+  profilePictureUrl  String?
+  grade             String?
+  motherTongue      String?
+  learningPreferences Json?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  parent            Parent?   @relation(fields: [parentId], references: [id], onDelete: Cascade)
+  school           School?   @relation(fields: [schoolId], references: [id])
+  relationships    ParentChildRelationship[]
+  credentials      ChildCredential?
+  schoolAccount   SchoolChildAccount?
+}
 model Parent {
   id              String    @id @default(uuid())
   email           String?   @unique
@@ -43,38 +64,6 @@ model ParentProfile {
   parent            Parent  @relation(fields: [parentId], references: [id], onDelete: Cascade)
 }
 
-model Child {
-  id                 String   @id @default(uuid())
-  parentId           String?  @map("parent_id")
-  schoolId           String?  @map("school_id")
-  fullName           String
-  displayName        String?
-  dateOfBirth        DateTime?
-  gender            String?
-  profilePictureUrl  String?
-  grade             String?
-  motherTongue      String?
-  learningPreferences Json?
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
-
-  parent            Parent?   @relation(fields: [parentId], references: [id], onDelete: Cascade)
-  school           School?   @relation(fields: [schoolId], references: [id])
-  relationships    ParentChildRelationship[]
-  credentials      ChildCredential?
-  schoolAccount   SchoolChildAccount?
-}
-
-model ChildCredential {
-  childId       String  @id @map("child_id")
-  username      String  @unique
-  passwordHash  String
-  createdBy     String?
-  createdAt     DateTime @default(now())
-  lastUpdated   DateTime @updatedAt
-
-  child        Child  @relation(fields: [childId], references: [id], onDelete: Cascade)
-}
 
 model ParentChildRelationship {
   parentId       String  @map("parent_id")
@@ -133,6 +122,19 @@ model OtpVerification {
   verified       Boolean @default(false)
   createdAt      DateTime @default(now())
 }
+
+// -- Only for school-created child accounts
+model ChildCredential {
+  childId       String  @id @map("child_id")
+  username      String  @unique
+  passwordHash  String
+  createdBy     String?
+  createdAt     DateTime @default(now())
+  lastUpdated   DateTime @updatedAt
+
+  child        Child  @relation(fields: [childId], references: [id], onDelete: Cascade)
+}
+
 
 model SchoolChildAccount {
   childId         String  @id @map("child_id")
