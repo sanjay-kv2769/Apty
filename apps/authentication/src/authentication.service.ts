@@ -1,8 +1,7 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { DatabaseService as PrismaService } from 'libs/database/database.service';
 import { FirebaseService } from './firebase/firebase.service';
-import { CreateChildDto } from '../../user/src/dto/createChild.dto';
-
+import { v4 as uuid } from 'uuid';
 @Injectable()
 export class AuthenticationService {
   constructor(
@@ -10,21 +9,9 @@ export class AuthenticationService {
     private readonly firebaseService: FirebaseService,
   ) { }
 
-  async verifyPhoneOtp(phoneNumber: string, otp: string) {
-    if (otp !== '123456') {
-      throw new UnauthorizedException('Invalid OTP');
-    }
-
-    // Mark phone number as verified
-    return this.prisma.parent.updateMany({
-      where: { phoneNumber },
-      data: { phoneVerified: true },
-    });
-  }
-
   async verifyGoogleOrAppleToken(tokenObj: { idToken: string }) {
     try {
-     
+
       const token = tokenObj.idToken
       const decodedToken = await this.firebaseService.verifyIdToken(token);
       const { uid, email, phone_number } = decodedToken;
@@ -34,8 +21,12 @@ export class AuthenticationService {
       });
 
       if (!parent) {
+        const parentId = uuid();
+        console.log("uuidv4", parentId);
+
         parent = await this.prisma.parent.create({
           data: {
+            id: parentId,
             firebaseUid: uid,
             email,
             phoneNumber: phone_number,
@@ -45,16 +36,35 @@ export class AuthenticationService {
         });
       }
 
+      // Upsert ParentAuthMethod
+      await this.prisma.parentAuthMethod.upsert({
+        where: {
+          parentId_methodType_providerId: {
+            parentId: parent.id,
+            methodType: 'google', // or 'apple', from token:decodedToken.firebase?.sign_in_provider 
+            providerId: uid,
+          },
+        },
+        update: {
+          isVerified: true,
+          isPrimary: true,
+        },
+        create: {
+          id: uuid(),
+          parentId: parent.id,
+          methodType: 'google', // or 'apple'
+          providerId: uid,
+          isVerified: true,
+          isPrimary: true,
+        },
+      });
+
       return parent;
     } catch (error) {
       console.error('Firebase authentication error:', error);
       throw new UnauthorizedException('Invalid Firebase token');
     }
   }
-
-  
-
-
 
 }
 

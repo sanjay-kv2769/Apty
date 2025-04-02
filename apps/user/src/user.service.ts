@@ -3,6 +3,7 @@ import { CreateChildDto } from './dto/createChild.dto';
 import { DatabaseService as PrismaService } from 'libs/database/database.service';
 import { RpcException } from '@nestjs/microservices';
 import { UpdateChildDto } from './dto/dto/updateChild.dto';
+import { v4 as uuidv4 } from 'uuid';
 
 @Injectable()
 export class UserService {
@@ -11,7 +12,7 @@ export class UserService {
   ) { }
 
 
-  //--------------------------- Parent-Add Child ---------------------------
+  //--------------------------- Parent and 1st Registration  ---------------------------
   async createChild(
     data: CreateChildDto,
     parentId: string,
@@ -32,6 +33,7 @@ export class UserService {
       preferredLanguage,
     } = data;
 
+    const childId = uuidv4();
     // Check if the parent exists
     const existingParent = await this.prisma.parent.findUnique({
       where: { id: parentId }
@@ -57,6 +59,7 @@ export class UserService {
       // 1. Create child
       const child = await tx.child.create({
         data: {
+          id: childId,
           fullName,
           displayName,
           dateOfBirth: new Date(dateOfBirth),
@@ -74,7 +77,7 @@ export class UserService {
       await tx.parentChildRelationship.create({
         data: {
           parentId,
-          childId: child.id,
+          childId,
           relationshipType,
           isPrimary: true
         }
@@ -100,12 +103,88 @@ export class UserService {
         data: { pinHash }
       });
       return {
-        message: 'Child and parent relationship created successfully.',
+        message: 'Registration successful.',
         child
       };
     });
   }
 
+  //--------------------------- Additional Child Registration ---------------------------
+  async addAdditionalChild(
+    data: CreateChildDto,
+    parentId: string,
+    relationshipType: string
+  ) {
+    const {
+      fullName,
+      displayName,
+      dateOfBirth,
+      gender,
+      grade,
+      profilePictureUrl,
+      motherTongue,
+      learningPreferences,
+    } = data;
+
+    const childId = uuidv4();
+
+    // 1. Check if parent exists
+    const existingParent = await this.prisma.parent.findUnique({
+      where: { id: parentId },
+    });
+
+    if (!existingParent) {
+      throw new Error('Parent does not exist.');
+    }
+
+    // 2. Check for duplicate child name under the same parent
+    const existingChild = await this.prisma.child.findFirst({
+      where: {
+        fullName,
+        parent: { id: parentId },
+      },
+    });
+
+    if (existingChild) {
+      throw new Error(
+        'A child with the same full name already exists for this parent.'
+      );
+    }
+
+    // 3. Transaction: Create child and relationship only
+    return this.prisma.$transaction(async (tx) => {
+      const child = await tx.child.create({
+        data: {
+          id: childId,
+          fullName,
+          displayName,
+          dateOfBirth: new Date(dateOfBirth),
+          gender,
+          profilePictureUrl,
+          grade,
+          motherTongue,
+          learningPreferences,
+          parent: {
+            connect: { id: parentId },
+          },
+        },
+      });
+
+      await tx.parentChildRelationship.create({
+        data: {
+          parentId,
+          childId,
+          relationshipType,
+          isPrimary: true, // optional: if not the first child
+        },
+      });
+
+      return {
+        message: 'Additional child added successfully.',
+        child,
+      };
+    });
+  }
 
   //  --------------------------- Parent updates their child's profile ---------------------------
   async updateChildByParent(childId: string, parentId: string, updates: UpdateChildDto) {
@@ -115,20 +194,6 @@ export class UserService {
 
     if (!child) {
       throw new RpcException('Child not found for this parent.');
-    }
-
-    return this.prisma.child.update({
-      where: { id: childId },
-      data: updates,
-    });
-  }
-
-  //  ---------------------------Child updates their own profile ---------------------------
-  async updateChildBySelf(childId: string, updates: UpdateChildDto) {
-    const child = await this.prisma.child.findUnique({ where: { id: childId } });
-
-    if (!child) {
-      throw new RpcException('Child not found.');
     }
 
     // Check if the forbidden fields are in the updates object
@@ -150,4 +215,6 @@ export class UserService {
       data: filteredUpdates,
     });
   }
+
+
 }

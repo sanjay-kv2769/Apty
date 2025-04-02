@@ -7,12 +7,8 @@ async function bootstrap() {
   const appContext = await NestFactory.createApplicationContext(AuthenticationModule);
 
   const configService = appContext.get(ConfigService);
-  // console.log('ConfigService Loaded:', configService); // Debugging step
   const authConfig = configService.get('app.authentication'); 
-  // console.log('Auth Config:', authConfig); // Debugging step
-  // if (!authConfig) {
-  //   throw new Error('Authentication configuration is missing!');
-  // }
+ 
   const app = await NestFactory.createMicroservice<MicroserviceOptions>(
     AuthenticationModule,
     {

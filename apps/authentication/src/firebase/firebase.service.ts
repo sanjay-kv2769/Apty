@@ -21,14 +21,9 @@ export class FirebaseService {
 
     async verifyIdToken(token: string): Promise<admin.auth.DecodedIdToken> {
         try {
-
-            // console.log("firebase service token", typeof token);
-            // console.log("firebase servicetoken log", token);
             this.firebaseApp.auth().verifyIdToken(token).then((data) => {
                 console.log('decodedToken:', data);
-
             })
-
             return await this.firebaseApp.auth().verifyIdToken(token);
         } catch (error) {
             console.error('Firebase token verification failed:', error);

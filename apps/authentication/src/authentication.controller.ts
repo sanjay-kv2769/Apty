@@ -13,16 +13,20 @@ export class AuthenticationController {
   handleAuthPing() {
     return { message: 'Auth microservice is online' };
   }
+  // ----------Send OTP----------
 
-  @MessagePattern({ cmd: 'send-otp' })
-  async sendOtp(@Payload() phoneNumber: string) {
-    return this.otpService.sendOtp(phoneNumber);
+  @MessagePattern({ cmd: 'send_otp' })
+  async sendOtp(@Payload() payload: { phoneNumber: string }) {
+    return this.otpService.sendOtp(payload.phoneNumber);
   }
+  // ----------Verify OTP----------
 
-  @MessagePattern({ cmd: 'verify-otp' })
+  @MessagePattern({ cmd: 'verify_otp' })
   async verifyPhoneOtp(@Payload() data: { phoneNumber: string; otpCode: string }) {
     return this.otpService.verifyOtp(data.phoneNumber, data.otpCode);
   }
+  // ----------Verify Firebase Token----------
+
   @MessagePattern({ cmd: 'firebase_signin' })
   async verifyGoogleOrAppleToken(@Payload() payload: { idToken: string }) {
     const parent = await this.authenticationService.verifyGoogleOrAppleToken(payload);
