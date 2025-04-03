@@ -49,3 +49,5 @@ export class UserController {
   }
 
 }
+
+// ------- Get All Parents -------

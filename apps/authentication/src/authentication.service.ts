@@ -22,7 +22,7 @@ export class AuthenticationService {
 
       if (!parent) {
         const parentId = uuid();
-        console.log("uuidv4", parentId);
+        // console.log("uuidv4", parentId);
 
         parent = await this.prisma.parent.create({
           data: {
@@ -41,7 +41,7 @@ export class AuthenticationService {
         where: {
           parentId_methodType_providerId: {
             parentId: parent.id,
-            methodType: 'google', // or 'apple', from token:decodedToken.firebase?.sign_in_provider 
+            methodType: decodedToken.firebase?.sign_in_provider, // or 'apple', from token:decodedToken.firebase?.sign_in_provider 
             providerId: uid,
           },
         },
@@ -52,7 +52,7 @@ export class AuthenticationService {
         create: {
           id: uuid(),
           parentId: parent.id,
-          methodType: 'google', // or 'apple'
+          methodType: decodedToken.firebase?.sign_in_provider, // 'google' or 'apple'
           providerId: uid,
           isVerified: true,
           isPrimary: true,

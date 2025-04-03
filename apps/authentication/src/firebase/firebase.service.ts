@@ -22,7 +22,7 @@ export class FirebaseService {
     async verifyIdToken(token: string): Promise<admin.auth.DecodedIdToken> {
         try {
             this.firebaseApp.auth().verifyIdToken(token).then((data) => {
-                console.log('decodedToken:', data);
+                // console.log('decodedToken:', data);
             })
             return await this.firebaseApp.auth().verifyIdToken(token);
         } catch (error) {
